@@ -1,0 +1,17 @@
+canvas {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    z-index: -9999;
+}
+
+#main_content {
+    width: 600px;
+    border: 2px solid black;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #fff;
+    padding: 15px;
+}
+

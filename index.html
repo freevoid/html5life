@@ -1,0 +1,32 @@
+ <!DOCTYPE html>
+ <html>
+     <head>
+         <title>Example of life game as background</title>
+         <link rel="stylesheet" type="text/css" href="media/css/style.css" media="all"/>
+         <script src="http://code.jquery.com/jquery-1.4.2.min.js" type="text/javascript"></script>
+         <script src="media/js/life.js" type="text/javascript"></script>
+         <script type="text/javascript">
+             $(document).ready(function () {
+                     life = new Life("#life_canvas",
+                         {
+                            live_color: "#a0a0a0;",
+                            random_rounds: 1200
+
+                        });
+                     life.draw_population();
+
+             });
+         </script>
+     </head>
+     <body>
+         <canvas id="life_canvas">Need canvas supporting browser. Go get it!</canvas>
+         <div id="main_content">
+             <h2>Welcome to the funny HTML5 canvas demo.</h2>
+             <p>This is it! Conway's Game of Life right in your browser :D</p>
+             <input type="button" value="Start" onclick="life.start();"/>
+             <input type="button" value="Pause" onclick="life.pause();"/>
+             <input type="button" value="Inject" onclick="life.inject(1000);"/>
+         </div>
+     </body>
+ </html>
+
