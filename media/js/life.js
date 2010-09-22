@@ -1,5 +1,39 @@
 /* helper functions */
 
+function classic_life(current_state, live_neighboors, dead_neighboors) {
+    var new_state = 0;
+    //console.log("MAKE DECISION ABOUT", cellx, celly, "LIVE NEIGHBOORS:", live_neighboors, "CURRENT:", is_live);
+    if (current_state) {
+        if (live_neighboors == 2 || live_neighboors == 3) {
+            //console.log("STAY LIVE!");
+            new_state = 1;
+        }
+    } else {
+        if (live_neighboors == 3) {
+            //console.log("LIVEN!");
+            new_state = 1;
+        }
+    }
+    //console.log("DECIDED TO", new_state?"LIVE":"DIE");
+    return new_state;
+}
+
+function make_decider(when_to_stay_live, when_to_liven) {
+    return function (current_state, live_neighboors, dead_neighboors) {
+        var new_state = 0;
+        if (current_state) {
+            if (when_to_stay_live.indexOf(live_neighboors) != -1) {
+                new_state = 1;
+            }
+        } else {
+            if (when_to_liven.indexOf(live_neighboors) != -1) {
+                new_state = 1;
+            }
+        }
+        return new_state;
+    }
+}
+
 function make_empty_grid(width, height) {
     var grid = Array();
     for (var i=0; i<width; i++) {
@@ -30,18 +64,30 @@ function prepare_canvas(canvas) {
     return context;
 }
 
-this.clear_canvas = function (canvas) {
+function clear_canvas(canvas) {
     canvas.getContext("2d").clearRect(0, 0,
             canvas.width, canvas.height);
 }
 
+function arrays_eq(a1, a2) {
+    if (a1.length != a2.length) {
+        return false;
+    }
+    for (i in a1) {
+        if (a1[i] != a2[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /* Main class */
 
-function Life(canvas_selector, options) {
+function Life(canvas, options) {
     if (options == undefined) { options = {}};
 
     // initialize instance variables
-    this.canvas = $(canvas_selector).get(0);
+    this.canvas = canvas;
     this.context = prepare_canvas(this.canvas);
     this.cell_size = (options.cell_size == undefined) ? 20 : options.cell_size;
     this.grid_width = Math.floor(this.canvas.width / this.cell_size);
@@ -49,7 +95,11 @@ function Life(canvas_selector, options) {
     if (options.pattern != undefined) {
         this.current = options.pattern;
     } else {
-        this.current = make_random_grid(this.grid_width, this.grid_height, options.random_rounds);
+        if (options.fill_random) {
+            this.current = make_random_grid(this.grid_width, this.grid_height, options.random_rounds);
+        } else {
+            this.current = make_empty_grid(this.grid_width, this.grid_height);
+        }
     }
     this.successor = make_empty_grid(this.grid_width, this.grid_height);
     this.live_color = (options.live_color == undefined) ? "#000000" : options.live_color;
@@ -57,10 +107,61 @@ function Life(canvas_selector, options) {
     this.redraw_interval = (options.redraw_interval == undefined) ? 500 : options.redraw_interval;
     this.generation_count = 0;
     this.started = false;
+    this.inner_decide_func = (options.decide_function == undefined) ? classic_life : options.decide_function;
 
     var this_ = this;
 
+    this.init = function () {
+        if (options.initial_draw) {
+            this.draw_population()
+        };
+        this_.init_events();
+    };
+
     // initialize methods
+    
+    this.convert_page_coords = function (pagex, pagey) {
+        return [Math.floor(pagex / this_.cell_size) + 1,
+                Math.floor(pagey / this_.cell_size)];
+    };
+
+    this.init_events = function () {
+        $(this_.canvas).mousedown(function(event) {
+                var cell_coords = this_.convert_page_coords(event.pageX, event.pageY);
+                this_.draw_mode = true;
+                this_.current_draw_cell = cell_coords;
+                this_.toggle_cell(cell_coords[0], cell_coords[1]);
+                });
+        $(this_.canvas).mousemove(function(event) {
+                if (this_.draw_mode) {
+                    var cell_coords = this_.convert_page_coords(event.pageX, event.pageY);
+                    if (!arrays_eq(cell_coords, this_.current_draw_cell)) {
+                        this_.current_draw_cell = cell_coords;
+                        this_.toggle_cell(cell_coords[0], cell_coords[1]);
+                    }
+                }});
+        $(this_.canvas).mouseup(function(event) {
+                this_.draw_mode = false;
+                });
+    };
+
+    this.toggle_cell = function (cellx, celly) {
+        //console.log("CURRENT", this_.current[cellx][celly]);
+        var current = (this_.current[cellx][celly] == undefined) ?
+            0 : this_.current[cellx][celly];
+        this_.current[cellx][celly] = (current + 1) % 2;
+        //console.log("NEW", this_.current[cellx][celly]);
+        if (current) {
+            this_.clear_cell(cellx, celly);
+        } else {
+            //console.log("TOGGLING CELL");
+            this_.context.save();
+            this_.context.fillStyle = this_.live_color;
+            this_.paint_cell(cellx, celly);
+            this_.context.restore();
+        }
+    };
+
     // draw current population
     this.draw_population = function () {
         //console.log("Drawing population");
@@ -82,41 +183,29 @@ function Life(canvas_selector, options) {
                 this_.cell_size, this_.cell_size);
     }
 
+    this.clear_cell = function (cellx, celly) {
+        this_.context.clearRect(cellx*this_.cell_size,
+                celly*this_.cell_size,
+                this_.cell_size, this_.cell_size);
+    }
+
     // swap current and successor
     this.swap_buffers = function () {
-        var tmp = this_.current;
         this_.current = this_.successor;
-        this_.successor = tmp;
+        this_.successor = make_empty_grid(this_.grid_width, this_.grid_height);
     }
 
     // calculate successor from current
     this.next_generation = function () {
-        for (cellx in this_.current) {
-            for (celly in this_.current[cellx]) {
+        for (var cellx=0; cellx<this_.grid_width; cellx++) {
+            for (var celly=0; celly<this_.grid_height; celly++) {
                 this_.successor[cellx][celly] = this.decide(
                         parseInt(cellx),
                         parseInt(celly));
             }
         }
     }
-
-    this.decide = function (cellx, celly) {
-        var live_neighboors = this_.count_live_neightboors(cellx, celly);
-        var dead_neighboors = 8 - live_neighboors;
-        var is_live = this_.current[cellx][celly];
-        var new_state = 0;
-        if (is_live) {
-            if (live_neighboors == 2 || live_neighboors == 3) {
-                new_state = 1;
-            }
-        } else {
-            if (live_neighboors == 3) {
-                new_state = 1;
-            }
-        }
-        return new_state;
-    }
-
+    
     this.neighboor_indexes = function (x, y) {
         return [
             [x-1, y],
@@ -149,6 +238,12 @@ function Life(canvas_selector, options) {
         }
 
         return count;
+    }
+
+    this.decide = function (cellx, celly) {
+        var live_neighboors = life.count_live_neightboors(cellx, celly);
+        var is_live = this_.current[cellx][celly];
+        return this_.inner_decide_func(is_live, live_neighboors, 8 - live_neighboors);
     }
 
     this.generation_step = function () {
@@ -188,6 +283,21 @@ function Life(canvas_selector, options) {
                 this_.grid_height, count);
     }
 
+    this.change_decider_from_st = function (when_to_stay_live_st, when_to_liven_st) {
+        my_parseInt = function (x) { return parseInt(x); };
+        this_.inner_decide_func = make_decider(
+                when_to_stay_live_st.split(" ").map(my_parseInt),
+                when_to_liven_st.split(" ").map(my_parseInt));
+        return false;
+    }
+
+    this.clear = function () {
+        this_.current = make_empty_grid(this_.grid_width,
+                this_.grid_height);
+        clear_canvas(this_.canvas);
+    }
+
+    this.init();
 }
 
 

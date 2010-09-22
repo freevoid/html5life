@@ -4,16 +4,19 @@
          <title>Example of life game as background</title>
          <link rel="stylesheet" type="text/css" href="media/css/style.css" media="all"/>
          <script src="http://code.jquery.com/jquery-1.4.2.min.js" type="text/javascript"></script>
+         <!-- <script src="media/js/jquery-1.3.2.min.js" type="text/javascript"></script> -->
          <script src="media/js/life.js" type="text/javascript"></script>
          <script type="text/javascript">
              $(document).ready(function () {
-                     life = new Life("#life_canvas",
+                     life = new Life(document.getElementById("life_canvas"),
                          {
                             live_color: "#a0a0a0;",
-                            random_rounds: 1200
-
+                            random_rounds: 1200,
+                            initial_draw: true,
+                            fill_random: false,
+                            redraw_interval: 500,
+                            decide_function: make_decider([2,3], [3]) // classic life game, example of make_decider
                         });
-                     life.draw_population();
 
              });
          </script>
@@ -25,7 +28,20 @@
              <p>This is it! Conway's Game of Life right in your browser :D</p>
              <input type="button" value="Start" onclick="life.start();"/>
              <input type="button" value="Pause" onclick="life.pause();"/>
+             <input type="button" value="Step" onclick="life.generation_step();"/>
              <input type="button" value="Inject" onclick="life.inject(1000);"/>
+             <input type="button" value="Clear" onclick="life.clear();"/>
+             <br />
+             <div id="decider_form">
+                 <input type="text" name="when_to_stay_live" value="2 3" />
+                 <input type="text" name="when_to_liven" value="3" />
+                 <input type="button" value="Change decider" onclick="life.change_decider_from_st($('[name=when_to_stay_live]').val(), $('[name=when_to_liven]').val());"/>
+             </div>
+             <br />
+             <div id="speed_form">
+                 <input type="text" name="redraw_interval" value="500" />
+                 <input type="button" value="Change refresh period" onclick="life.set_interval($('[name=redraw_interval]').val())"/>
+             </div>
          </div>
      </body>
  </html>
