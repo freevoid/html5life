@@ -6,12 +6,14 @@ canvas {
 }
 
 #main_content {
+    position: absolute;
     width: 600px;
     border: 2px solid black;
     text-align: center;
-    margin-left: auto;
-    margin-right: auto;
+    margin-left: 50%;
+    left:-300px;
     background-color: #fff;
     padding: 15px;
+    top: 30%;
 }
 
