@@ -1,0 +1,19 @@
+canvas {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    z-index: -9999;
+}
+
+#main_content {
+    position: absolute;
+    width: 600px;
+    border: 2px solid black;
+    text-align: center;
+    margin-left: 50%;
+    left:-300px;
+    background-color: #fff;
+    padding: 15px;
+    top: 30%;
+}
+
