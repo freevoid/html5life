@@ -1,20 +1,39 @@
+/*
+ * Copyright (C) 2011 by Nikolay Zakharov <nikolay@desh.su>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *     FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *     AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *     THE SOFTWARE.
+ */
+
 /* helper functions */
 
 function classic_life(current_state, live_neighboors, dead_neighboors) {
     var new_state = 0;
-    //console.log("MAKE DECISION ABOUT", cellx, celly, "LIVE NEIGHBOORS:", live_neighboors, "CURRENT:", is_live);
     if (current_state) {
         if (live_neighboors == 2 || live_neighboors == 3) {
-            //console.log("STAY LIVE!");
             new_state = 1;
         }
     } else {
         if (live_neighboors == 3) {
-            //console.log("LIVEN!");
             new_state = 1;
         }
     }
-    //console.log("DECIDED TO", new_state?"LIVE":"DIE");
+
     return new_state;
 }
 
@@ -59,8 +78,8 @@ function make_random_grid(width, height, rounds) {
 
 function prepare_canvas(canvas) {
     var context = canvas.getContext('2d');
-    canvas.width = screen.width;
-    canvas.height = screen.height;
+    canvas.width = document.width;
+    canvas.height = document.height;
     return context;
 }
 
@@ -119,20 +138,21 @@ function Life(canvas, options) {
     };
 
     // initialize methods
-    
+
     this.convert_page_coords = function (pagex, pagey) {
-        return [Math.floor(pagex / this_.cell_size) + 1,
+        return [Math.floor(pagex / this_.cell_size),
                 Math.floor(pagey / this_.cell_size)];
     };
 
     this.init_events = function () {
-        $(this_.canvas).mousedown(function(event) {
+        var event_container = $(this_.canvas).parent();
+        event_container.mousedown(function(event) {
                 var cell_coords = this_.convert_page_coords(event.pageX, event.pageY);
                 this_.draw_mode = true;
                 this_.current_draw_cell = cell_coords;
                 this_.toggle_cell(cell_coords[0], cell_coords[1]);
                 });
-        $(this_.canvas).mousemove(function(event) {
+        event_container.mousemove(function(event) {
                 if (this_.draw_mode) {
                     var cell_coords = this_.convert_page_coords(event.pageX, event.pageY);
                     if (!arrays_eq(cell_coords, this_.current_draw_cell)) {
@@ -140,7 +160,7 @@ function Life(canvas, options) {
                         this_.toggle_cell(cell_coords[0], cell_coords[1]);
                     }
                 }});
-        $(this_.canvas).mouseup(function(event) {
+        event_container.mouseup(function(event) {
                 this_.draw_mode = false;
                 });
     };
@@ -205,7 +225,7 @@ function Life(canvas, options) {
             }
         }
     }
-    
+
     this.neighboor_indexes = function (x, y) {
         return [
             [x-1, y],
@@ -256,6 +276,16 @@ function Life(canvas, options) {
         this_.draw_population();
     }
 
+    this.faster = function () {
+        this_.set_interval(this_.redraw_interval/1.3);
+        return false;
+    }
+
+    this.slower = function () {
+        this_.set_interval(this_.redraw_interval*1.3);
+        return false;
+    }
+
     this.set_interval = function (new_interval, force_start) {
         clearInterval(this_.timer);
         this_.redraw_interval = new_interval;
@@ -268,6 +298,7 @@ function Life(canvas, options) {
     this.pause = function () {
         clearInterval(this_.timer);
         this_.started = false;
+        return false;
     }
 
     this.start = function () {
@@ -276,11 +307,21 @@ function Life(canvas, options) {
                     this_.redraw_interval);
             this_.started = true;
         }
+        return false;
+    }
+
+    this.toggle = function () {
+        if (this_.started) {
+            return this_.pause();
+        } else {
+            return this_.start();
+        }
     }
 
     this.inject = function (count) {
         inject_randomness_in_grid(this_.current, this_.grid_width,
                 this_.grid_height, count);
+        return false;
     }
 
     this.change_decider_from_st = function (when_to_stay_live_st, when_to_liven_st) {
@@ -295,9 +336,8 @@ function Life(canvas, options) {
         this_.current = make_empty_grid(this_.grid_width,
                 this_.grid_height);
         clear_canvas(this_.canvas);
+        return false;
     }
 
     this.init();
 }
-
-
