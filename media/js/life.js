@@ -77,9 +77,11 @@ function make_random_grid(width, height, rounds) {
 }
 
 function prepare_canvas(canvas) {
-    var context = canvas.getContext('2d');
-    canvas.width = document.width;
-    canvas.height = document.height;
+    var context = canvas.getContext('2d'),
+        dims = get_doc_dimensions();
+
+    canvas.width = dims[0];
+    canvas.height = dims[1];
     return context;
 }
 
@@ -98,6 +100,45 @@ function arrays_eq(a1, a2) {
         }
     }
     return true;
+}
+
+function get_window_dimensions() {
+    var winW, winH;
+
+    if (document.body && document.body.offsetWidth) {
+        winW = document.body.offsetWidth;
+        winH = document.body.offsetHeight;
+    }
+    if (document.compatMode=='CSS1Compat' &&
+            document.documentElement &&
+            document.documentElement.offsetWidth ) {
+        winW = document.documentElement.offsetWidth;
+        winH = document.documentElement.offsetHeight;
+    }
+    if (window.innerWidth && window.innerHeight) {
+        winW = window.innerWidth;
+        winH = window.innerHeight;
+    }
+    return [winW, winH];
+}
+
+function get_doc_dimensions() {
+    var D = document,
+        h, w;
+    w = Math.max(
+        Math.max(D.body.scrollWidth, D.documentElement.scrollWidth),
+        Math.max(D.body.offsetWidth, D.documentElement.offsetWidth),
+        Math.max(D.body.clientWidth, D.documentElement.clientWidth)
+    );
+    h = Math.max(
+        Math.max(D.body.scrollHeight, D.documentElement.scrollHeight),
+        Math.max(D.body.offsetHeight, D.documentElement.offsetHeight),
+        Math.max(D.body.clientHeight, D.documentElement.clientHeight)
+    );
+    if (w == undefined) {
+        return get_window_dimensions();
+    }
+    return [w, h];
 }
 
 /* Main class */
